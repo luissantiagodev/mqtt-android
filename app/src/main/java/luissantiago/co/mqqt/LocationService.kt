@@ -11,8 +11,16 @@ import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.support.v4.app.NotificationCompat
+import android.util.Log
 import android.widget.Toast
 import com.google.android.gms.location.*
+import org.eclipse.paho.client.mqttv3.MqttClient
+import org.eclipse.paho.android.service.MqttAndroidClient
+import org.eclipse.paho.client.mqttv3.IMqttToken
+import org.eclipse.paho.client.mqttv3.IMqttActionListener
+import org.eclipse.paho.client.mqttv3.MqttMessage
+import org.json.JSONObject
+
 
 /**
  * Created by Luis Santiago on 3/3/19.
@@ -21,12 +29,16 @@ import com.google.android.gms.location.*
 
 class LocationService : Service (){
 
-    lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
-
     companion object {
         const val UPDATE_INTERVAL = 200
         const val FASTEST_INTERVAL = 400
+        const val SERVER_URL = "tcp://192.168.0.9:1883"
     }
+
+    private lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
+    var clientId = MqttClient.generateClientId()!!
+    var client = MqttAndroidClient(this, SERVER_URL, clientId)
+
 
     override fun onBind(p0: Intent?): IBinder? {
         return null
@@ -35,6 +47,17 @@ class LocationService : Service (){
     override fun onCreate() {
         super.onCreate()
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+//        client.connect().actionCallback = object : IMqttActionListener {
+//            override fun onSuccess(asyncActionToken: IMqttToken) {
+//                // We are connected
+//                Log.e("SERVICE" , "CONNECTED TO SERVER MQQT")
+//            }
+//
+//            override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
+//                // Something went wrong e.g. connection timeout or firewall problems
+//                Log.e("SERVICE" , "NOT CONNECTED ${exception.localizedMessage}")
+//            }
+//        }
     }
 
 
@@ -47,6 +70,22 @@ class LocationService : Service (){
         mFusedLocationProviderClient.requestLocationUpdates(mLocationRequestHighAccuracy , object : LocationCallback(){
             override fun onLocationResult(p0: LocationResult?) {
                 Toast.makeText(this@LocationService, "Latitude ${p0!!.lastLocation.latitude} Longitude:${p0!!.lastLocation.longitude}", Toast.LENGTH_SHORT).show()
+
+
+                val hashMapMain = HashMap<String , Any>()
+                val hashMapChild = HashMap<String , Any>()
+
+                hashMapChild["latitude"] = p0!!.lastLocation.latitude
+                hashMapChild["longitude"] = p0!!.lastLocation.longitude
+
+                hashMapMain["location"] = hashMapChild
+
+
+                val payload = JSONObject(hashMapMain)
+
+                Log.e("SERVICE" , "PAYLOAD: $payload")
+                val message = MqttMessage(payload.toString().toByteArray())
+                //client.publish("UID-CONDUCTOR", message)
             }
         }, Looper.myLooper())
 

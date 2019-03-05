@@ -55,7 +55,9 @@ class MainActivity : Activity() {
             override fun onComplete(p0: Task<Location>) {
                 if (p0.isSuccessful) {
                     val location = p0.result
-                    Toast.makeText(this@MainActivity, "Latitude ${location!!.latitude} Longitude:${location!!.longitude}", Toast.LENGTH_SHORT).show()
+                    if(location != null){
+                        Toast.makeText(this@MainActivity, "Latitude ${location!!.latitude} Longitude:${location!!.longitude}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         })
@@ -98,7 +100,7 @@ class MainActivity : Activity() {
         when (requestCode) {
             REQUEST_PERMISSION -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
+                    //TODO: Request the location
                 }
             }
         }
